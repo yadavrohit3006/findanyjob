@@ -26,11 +26,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="flex items-center gap-2 font-bold text-indigo-600 text-lg">
               <span className="text-2xl">💼</span> FindAnyJob
             </Link>
-            <nav className="flex items-center gap-4 text-sm text-gray-600">
-              <Link href="/results" className="hover:text-indigo-600 transition-colors">
-                Browse Jobs
-              </Link>
-            </nav>
           </div>
         </header>
 
