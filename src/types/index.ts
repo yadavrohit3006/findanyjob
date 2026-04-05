@@ -11,6 +11,7 @@ export interface Job {
   location: string;
   minExperience: number; // years
   maxExperience: number; // years
+  experienceUnknown?: boolean; // true when the source didn't provide experience data
   source: JobSource;
   applyUrl: string;
   postedAt: string; // ISO date string

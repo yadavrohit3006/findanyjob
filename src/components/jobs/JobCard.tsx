@@ -47,10 +47,11 @@ export function JobCard({ job }: JobCardProps) {
     setSaved(!saved);
   }
 
-  const expLabel =
-    job.minExperience === job.maxExperience
-      ? `${job.minExperience} yr`
-      : `${job.minExperience}–${job.maxExperience} yrs`;
+  const expLabel = job.experienceUnknown
+    ? "Exp. not specified"
+    : job.minExperience === job.maxExperience
+    ? `${job.minExperience} yr`
+    : `${job.minExperience}–${job.maxExperience} yrs`;
 
   return (
     <article className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-indigo-200 transition-all group">

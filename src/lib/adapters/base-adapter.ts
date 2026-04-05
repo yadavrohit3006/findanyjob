@@ -30,9 +30,9 @@ export abstract class BaseAdapter implements JobAdapter {
     );
   }
 
-  /** Utility: match experience */
+  /** Utility: match experience — pass through if source didn't provide data */
   protected matchesExperience(job: Job, experience: number): boolean {
-    if (experience === 0) return true;
+    if (experience === 0 || job.experienceUnknown) return true;
     return job.minExperience <= experience && job.maxExperience >= experience;
   }
 }

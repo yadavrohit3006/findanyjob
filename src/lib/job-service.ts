@@ -36,8 +36,11 @@ export function applyFilters(jobs: Job[], filters: FilterState): Job[] {
     if (filters.sources.length > 0 && !filters.sources.includes(job.source)) return false;
     if (filters.workModes.length > 0 && !filters.workModes.includes(job.workMode)) return false;
     if (filters.jobTypes.length > 0 && !filters.jobTypes.includes(job.jobType)) return false;
-    if (job.minExperience > filters.experienceMax) return false;
-    if (job.maxExperience < filters.experienceMin) return false;
+    // Skip experience filter for jobs where the source didn't provide data
+    if (!job.experienceUnknown) {
+      if (job.minExperience > filters.experienceMax) return false;
+      if (job.maxExperience < filters.experienceMin) return false;
+    }
     return true;
   });
 }

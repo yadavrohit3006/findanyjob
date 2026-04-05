@@ -56,11 +56,17 @@ function mapEmploymentType(types: string[]): Job["jobType"] {
   return "full-time";
 }
 
-function mapExperience(exp: JSearchJob["job_required_experience"]): { min: number; max: number } {
-  if (!exp || exp.no_experience_required) return { min: 0, max: 2 };
-  const years = exp.minimum_years_of_experience
-    ?? Math.round((exp.required_experience_in_months ?? 0) / 12);
-  return { min: years, max: years + 3 };
+function mapExperience(exp: JSearchJob["job_required_experience"]): {
+  min: number;
+  max: number;
+  unknown: boolean;
+} {
+  if (!exp) return { min: 0, max: 30, unknown: true };
+  if (exp.no_experience_required) return { min: 0, max: 1, unknown: false };
+  const years =
+    exp.minimum_years_of_experience ??
+    Math.round((exp.required_experience_in_months ?? 0) / 12);
+  return { min: years, max: years + 3, unknown: false };
 }
 
 function formatSalary(job: JSearchJob): string | undefined {
@@ -76,7 +82,7 @@ function formatSalary(job: JSearchJob): string | undefined {
 }
 
 function mapJob(raw: JSearchJob): Job {
-  const { min, max } = mapExperience(raw.job_required_experience);
+  const { min, max, unknown } = mapExperience(raw.job_required_experience);
 
   const location = raw.job_is_remote
     ? "Remote"
@@ -89,6 +95,7 @@ function mapJob(raw: JSearchJob): Job {
     location,
     minExperience: min,
     maxExperience: max,
+    experienceUnknown: unknown,
     source: mapPublisher(raw.job_publisher),
     applyUrl: raw.job_apply_link,
     postedAt: raw.job_posted_at_datetime_utc,
