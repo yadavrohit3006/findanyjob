@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchJobs } from "@/lib/job-service";
+import { enrichExperience } from "@/lib/experience-extractor";
 import { SearchParams } from "@/types";
 
 export async function GET(req: NextRequest) {
@@ -12,7 +13,8 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    const jobs = await searchJobs(params);
+    const rawJobs = await searchJobs(params);
+    const jobs = await enrichExperience(rawJobs);
 
     return NextResponse.json(
       { jobs, total: jobs.length },
