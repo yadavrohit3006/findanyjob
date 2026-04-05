@@ -13,13 +13,13 @@ interface ExtractedExperience {
 }
 
 /**
- * Ask Claude Haiku to extract the experience requirement from a job description.
- * Returns null if no experience requirement is found.
+ * Ask Claude Haiku to infer experience from the job title + description.
+ * Returns null only if genuinely indeterminate.
  */
-async function extractFromDescription(
+async function extractFromJob(
+  title: string,
   description: string
 ): Promise<ExtractedExperience | null> {
-  // Truncate to ~1500 chars — enough to find experience mentions, keeps cost low
   const snippet = description.slice(0, 1500);
 
   const message = await client.messages.create({
@@ -28,26 +28,37 @@ async function extractFromDescription(
     messages: [
       {
         role: "user",
-        content: `Extract the years of experience required from this job description.
-Reply with ONLY a JSON object like {"min": 2, "max": 5} using integers.
-If no experience is mentioned, reply with null.
-If only a minimum is mentioned (e.g. "5+ years"), set max to min + 3.
-If it says "fresher" or "0 years", reply with {"min": 0, "max": 1}.
+        content: `You are parsing a job posting to find the years of experience required.
 
-Job description:
-${snippet}`,
+Job title: ${title}
+Job description (excerpt):
+${snippet}
+
+Instructions:
+1. Look for explicit experience requirements (e.g. "5+ years", "3-5 years experience").
+2. If none found, infer from the job title level:
+   - "Intern" or "Trainee" → {"min": 0, "max": 1}
+   - "Junior" or "Associate" or "Entry" → {"min": 0, "max": 2}
+   - No level prefix (e.g. "Software Engineer") → {"min": 2, "max": 5}
+   - "Senior" or "Sr." → {"min": 5, "max": 9}
+   - "Staff" or "Lead" → {"min": 7, "max": 12}
+   - "Principal" or "Architect" → {"min": 10, "max": 15}
+   - "Manager" or "Director" → {"min": 6, "max": 12}
+   - "VP" or "Head of" → {"min": 10, "max": 18}
+3. Reply with ONLY a JSON object: {"min": <integer>, "max": <integer>}
+4. Never reply with null — always make a best estimate.`,
       },
     ],
   });
 
   const raw = (message.content[0] as { text: string }).text.trim();
 
-  if (raw === "null") return null;
-
   try {
-    const parsed = JSON.parse(raw);
+    // Strip any markdown code fences if Claude adds them
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
     if (typeof parsed.min === "number" && typeof parsed.max === "number") {
-      return { min: parsed.min, max: parsed.max };
+      return { min: Math.max(0, parsed.min), max: Math.max(parsed.min, parsed.max) };
     }
     return null;
   } catch {
@@ -56,8 +67,8 @@ ${snippet}`,
 }
 
 /**
- * Enriches jobs that have unknown experience by extracting it from their
- * description using Claude Haiku. Results are cached by job ID.
+ * Enriches jobs that have unknown experience by inferring it via Claude Haiku.
+ * Results are cached by job ID to avoid redundant API calls.
  *
  * Only runs when ANTHROPIC_API_KEY is set — skips silently otherwise.
  */
@@ -67,29 +78,29 @@ export async function enrichExperience(jobs: Job[]): Promise<Job[]> {
   const unknownJobs = jobs.filter((j) => j.experienceUnknown);
   if (unknownJobs.length === 0) return jobs;
 
-  // Run extractions in parallel (max 10 at a time to avoid rate limits)
+  // Run extractions in parallel (max 10 at a time to stay within rate limits)
   const BATCH_SIZE = 10;
   for (let i = 0; i < unknownJobs.length; i += BATCH_SIZE) {
     const batch = unknownJobs.slice(i, i + BATCH_SIZE);
     await Promise.all(
       batch.map(async (job) => {
-        if (experienceCache.has(job.id)) return; // already parsed
+        if (experienceCache.has(job.id)) return; // already parsed this session
         try {
-          const result = await extractFromDescription(job.description);
+          const result = await extractFromJob(job.title, job.description);
           experienceCache.set(job.id, result);
         } catch (err) {
           console.error(`[ExperienceExtractor] Failed for ${job.id}:`, err);
-          experienceCache.set(job.id, null); // don't retry on error
+          experienceCache.set(job.id, null);
         }
       })
     );
   }
 
-  // Apply cached results back to jobs
+  // Merge cached results back into jobs
   return jobs.map((job) => {
     if (!job.experienceUnknown) return job;
     const cached = experienceCache.get(job.id);
-    if (!cached) return job; // still unknown
+    if (!cached) return job; // Claude couldn't determine — keep "Exp. not specified"
     return {
       ...job,
       minExperience: cached.min,
