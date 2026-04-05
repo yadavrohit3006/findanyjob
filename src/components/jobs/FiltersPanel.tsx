@@ -13,9 +13,14 @@ interface FiltersPanelProps {
 
 const SOURCES: { label: string; value: JobSource }[] = [
   { label: "LinkedIn", value: "linkedin" },
+  { label: "Indeed", value: "indeed" },
+  { label: "ZipRecruiter", value: "ziprecruiter" },
   { label: "Naukri", value: "naukri" },
   { label: "Instahyre", value: "instahyre" },
-  { label: "Indeed", value: "indeed" },
+  { label: "Glassdoor", value: "glassdoor" },
+  { label: "Monster", value: "monster" },
+  { label: "Ladders", value: "ladders" },
+  { label: "Other", value: "other" },
 ];
 
 const WORK_MODES: { label: string; value: WorkMode }[] = [

@@ -1,4 +1,14 @@
-export type JobSource = "linkedin" | "naukri" | "instahyre" | "indeed" | "glassdoor";
+export type JobSource =
+  | "linkedin"
+  | "naukri"
+  | "instahyre"
+  | "indeed"
+  | "glassdoor"
+  | "ziprecruiter"
+  | "monster"
+  | "ladders"
+  | "builtin"
+  | "other";
 
 export type JobType = "full-time" | "part-time" | "contract" | "internship" | "freelance";
 
@@ -13,6 +23,7 @@ export interface Job {
   maxExperience: number; // years
   experienceUnknown?: boolean; // true when the source didn't provide experience data
   source: JobSource;
+  sourceLabel?: string; // exact publisher name from the source API (e.g. "ZipRecruiter", "Cisco Careers")
   applyUrl: string;
   postedAt: string; // ISO date string
   description: string;

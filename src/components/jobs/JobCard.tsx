@@ -16,7 +16,18 @@ const SOURCE_LABELS: Record<JobSource, string> = {
   instahyre: "Instahyre",
   indeed: "Indeed",
   glassdoor: "Glassdoor",
+  ziprecruiter: "ZipRecruiter",
+  monster: "Monster",
+  ladders: "Ladders",
+  builtin: "Built In",
+  other: "Other",
 };
+
+// Use the raw publisher label from the API if available, otherwise fall back to our map
+function getSourceLabel(job: Job): string {
+  if (job.sourceLabel) return job.sourceLabel;
+  return SOURCE_LABELS[job.source] ?? job.source;
+}
 
 const WORK_MODE_LABELS = {
   remote: "Remote",
@@ -128,7 +139,7 @@ export function JobCard({ job }: JobCardProps) {
           {/* Footer */}
           <div className="flex items-center justify-between mt-4 gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="source">{SOURCE_LABELS[job.source]}</Badge>
+              <Badge variant="source">{getSourceLabel(job)}</Badge>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${WORK_MODE_COLORS[job.workMode]}`}
               >

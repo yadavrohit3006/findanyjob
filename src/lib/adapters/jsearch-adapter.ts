@@ -36,18 +36,27 @@ interface JSearchResponse {
   data: JSearchJob[];
 }
 
-// Publisher → our JobSource. JSearch often uses company career site names,
-// so we check for known platform keywords and fall back to "indeed".
+// Publisher → our JobSource.
+// JSearch returns both platform names ("Indeed", "LinkedIn") and company
+// career site names ("Cisco Careers", "Capital One Career").
+// We map known platforms accurately; company career sites get "other".
 function mapPublisher(publisher: string): JobSource {
   const p = publisher.toLowerCase();
   if (p.includes("linkedin")) return "linkedin";
-  if (p.includes("naukri") || p.includes("apna")) return "naukri";
-  if (p.includes("glassdoor")) return "glassdoor";
-  if (p.includes("instahyre")) return "instahyre";
   if (p.includes("indeed")) return "indeed";
-  // Company career sites (e.g. "Cisco Careers") → show as LinkedIn
-  return "linkedin";
+  if (p.includes("glassdoor")) return "glassdoor";
+  if (p.includes("naukri") || p.includes("apna")) return "naukri";
+  if (p.includes("instahyre")) return "instahyre";
+  if (p.includes("ziprecruiter")) return "ziprecruiter";
+  if (p.includes("monster")) return "monster";
+  if (p.includes("ladder")) return "ladders";
+  if (p.includes("built in") || p.includes("builtin")) return "builtin";
+  // Company career pages, job boards we don't recognise → "other"
+  return "other";
 }
+
+// Store the original publisher string so we can display it accurately
+// instead of a generic label
 
 function mapEmploymentType(types: string[]): Job["jobType"] {
   if (types.includes("PARTTIME")) return "part-time";
@@ -97,6 +106,7 @@ function mapJob(raw: JSearchJob): Job {
     maxExperience: max,
     experienceUnknown: unknown,
     source: mapPublisher(raw.job_publisher),
+    sourceLabel: raw.job_publisher,
     applyUrl: raw.job_apply_link,
     postedAt: raw.job_posted_at_datetime_utc,
     description: raw.job_description,
