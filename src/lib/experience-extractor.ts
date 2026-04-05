@@ -16,11 +16,36 @@ interface ExtractedExperience {
  * Ask Claude Haiku to infer experience from the job title + description.
  * Returns null only if genuinely indeterminate.
  */
+/**
+ * Extract the requirements/qualifications section from a job description.
+ * Requirements are usually in the bottom half — we search for section headers.
+ */
+function extractRequirementsSection(description: string): string {
+  const headers = [
+    "requirements", "qualifications", "what you'll need", "what you need",
+    "minimum qualifications", "basic qualifications", "you have", "you bring",
+    "must have", "required skills", "experience required",
+  ];
+  const lower = description.toLowerCase();
+  let earliest = -1;
+  for (const h of headers) {
+    const idx = lower.indexOf(h);
+    if (idx !== -1 && (earliest === -1 || idx < earliest)) earliest = idx;
+  }
+  // Return from the section header to end, capped at 2000 chars
+  if (earliest !== -1) return description.slice(earliest, earliest + 2000);
+  // No header found — return last 2000 chars where requirements usually live
+  return description.slice(-2000);
+}
+
 async function extractFromJob(
   title: string,
   description: string
 ): Promise<ExtractedExperience | null> {
-  const snippet = description.slice(0, 1500);
+  // Use requirements section + first 500 chars for context
+  const context = description.slice(0, 500);
+  const requirements = extractRequirementsSection(description);
+  const snippet = `${context}\n\n...\n\n${requirements}`;
 
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -58,7 +83,11 @@ Instructions:
     const cleaned = raw.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(cleaned);
     if (typeof parsed.min === "number" && typeof parsed.max === "number") {
-      return { min: Math.max(0, parsed.min), max: Math.max(parsed.min, parsed.max) };
+      const min = Math.max(0, parsed.min);
+      // Ensure a sensible range — if Claude collapses min==max (e.g. "2+ years" → 2,2),
+      // expand max by 3 to reflect the open-ended "+" nature
+      const max = parsed.max <= parsed.min ? parsed.min + 3 : parsed.max;
+      return { min, max };
     }
     return null;
   } catch {
