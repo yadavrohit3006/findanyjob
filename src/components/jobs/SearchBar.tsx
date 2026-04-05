@@ -26,9 +26,17 @@ export function SearchBar({ onSearch, isLoading, defaultValues, compact }: Searc
   const [query, setQuery] = useState(defaultValues?.query ?? "");
   const [location, setLocation] = useState(defaultValues?.location ?? "");
   const [experience, setExperience] = useState(defaultValues?.experience ?? 0);
+  const [touched, setTouched] = useState(false);
+
+  const queryEmpty = query.trim() === "";
+  const showError = touched && queryEmpty;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (queryEmpty) {
+      setTouched(true);
+      return;
+    }
     onSearch({ query, location, experience });
   }
 
@@ -43,17 +51,26 @@ export function SearchBar({ onSearch, isLoading, defaultValues, compact }: Searc
         </p>
       )}
 
-      <div className={`flex ${compact ? "flex-row gap-2 flex-1 flex-wrap" : "flex-col sm:flex-row gap-3"}`}>
+      <div className={`flex ${compact ? "flex-row gap-2 flex-1 flex-wrap" : "flex-col sm:flex-row gap-3"} ${showError ? "pb-5 sm:pb-0 sm:items-start" : ""}`}>
         {/* Job Title */}
         <div className="relative flex-1 min-w-[180px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${showError ? "text-red-400" : "text-gray-400"}`} />
           <input
             type="text"
             placeholder="Job title, role, or skill"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            onChange={(e) => { setQuery(e.target.value); setTouched(false); }}
+            className={`w-full pl-9 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:border-transparent ${
+              showError
+                ? "border-red-400 focus:ring-red-400 placeholder-red-300"
+                : "border-gray-300 focus:ring-indigo-500"
+            }`}
           />
+          {showError && (
+            <p className="absolute -bottom-5 left-0 text-xs text-red-500">
+              Please enter a job title to search
+            </p>
+          )}
         </div>
 
         {/* Location */}
