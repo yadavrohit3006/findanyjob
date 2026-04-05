@@ -11,25 +11,21 @@ import { JSearchAdapter } from "./jsearch-adapter";     // RAPIDAPI_KEY
 import { AdzunaAdapter } from "./adzuna-adapter";       // ADZUNA_APP_ID + ADZUNA_APP_KEY
 import { RemotiveAdapter } from "./remotive-adapter";   // No key needed
 
-/**
- * Strategy: prefer real adapters when env vars are present;
- * fall back to mock adapters so the app always shows something.
- *
- * To go fully live, remove the mock adapters below.
- */
 const hasJSearch = !!process.env.RAPIDAPI_KEY;
 const hasAdzuna = !!(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY);
 
 export const adapters: JobAdapter[] = [
-  // Real adapters (only active when keys are set)
-  ...(hasJSearch ? [new JSearchAdapter()] : [new LinkedInAdapter(), new IndeedAdapter()]),
-  ...(hasAdzuna ? [new AdzunaAdapter()] : [new NaukriAdapter()]),
+  // JSearch — aggregates LinkedIn, Indeed, ZipRecruiter, Glassdoor etc.
+  ...(hasJSearch ? [new JSearchAdapter()] : []),
 
-  // Remotive is always on (free, no key)
+  // Adzuna — free public API covering India + global
+  ...(hasAdzuna ? [new AdzunaAdapter()] : []),
+
+  // Remotive — always on, no key needed, remote jobs
   new RemotiveAdapter(),
 
-  // Instahyre mock (replace with a real adapter when available)
-  new InstahyreAdapter(),
+  // Mock adapters intentionally removed — they produce fake apply links.
+  // Add real adapters here as new API integrations become available.
 ];
 
 export {
