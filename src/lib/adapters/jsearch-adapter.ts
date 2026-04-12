@@ -108,7 +108,7 @@ function mapJob(raw: JSearchJob): Job {
     source: mapPublisher(raw.job_publisher),
     sourceLabel: raw.job_publisher,
     applyUrl: raw.job_apply_link,
-    postedAt: raw.job_posted_at_datetime_utc,
+    postedAt: raw.job_posted_at_datetime_utc ?? "",
     description: raw.job_description,
     skills: raw.job_required_skills ?? [],
     salary: formatSalary(raw),
